@@ -5,7 +5,7 @@ Run locally:  python3 server.py
 Production:   gunicorn server:app
 """
 import urllib.request, urllib.error, urllib.parse, json, ssl, os
-from flask import Flask, jsonify, send_file
+from flask import Flask, jsonify, send_file, send_from_directory
 
 # Skip SSL verification for CMS public API endpoints.
 # Required locally on macOS (missing CA bundle) and kept for Render (Linux)
@@ -14,6 +14,7 @@ _ctx = ssl.create_default_context()
 _ctx.check_hostname = False
 _ctx.verify_mode = ssl.CERT_NONE
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 app = Flask(__name__)
 
 CMS = 'https://data.cms.gov/provider-data/api/1/datastore/query'
@@ -38,12 +39,17 @@ def cms_avg(state_or_nation):
 
 @app.route('/')
 def index():
-    return send_file(os.path.join(os.path.dirname(__file__), 'index.html'))
+    return send_from_directory(BASE_DIR, 'index.html')
 
 @app.route('/template.docx')
 def template():
-    return send_file(os.path.join(os.path.dirname(__file__), 'template.docx'),
-                     mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+    return send_from_directory(BASE_DIR, 'template.docx',
+                               mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
+
+@app.route('/debug')
+def debug():
+    files = os.listdir(BASE_DIR)
+    return jsonify({'base_dir': BASE_DIR, 'files': files})
 
 @app.route('/api/provider/<ccn>')
 def provider(ccn):
