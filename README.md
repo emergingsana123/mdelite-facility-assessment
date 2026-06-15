@@ -3,6 +3,18 @@
 
 ---
 
+## Live Demo
+
+**Deployed URL:** https://mdelite-facility-assessment.onrender.com
+
+**GitHub Repository:** https://github.com/emergingsana123/mdelite-facility-assessment
+
+The application is fully deployed and publicly accessible. No local setup is required to use it. Enter any valid 6-digit CCN to fetch live CMS data, populate the report, and download PDF or Word output directly from the browser.
+
+> Note: The application is hosted on Render's free tier. If the instance has been idle, the first request may take 30 to 60 seconds to cold-start before responding.
+
+---
+
 ## Overview
 
 This is a lightweight internal web application built for the Medelite Director team. It enables users to look up any skilled nursing facility in the United States using its CMS Certification Number (CCN), automatically pull publicly available performance data from the CMS Provider Data Catalog, combine that data with internal operational inputs, and download a formatted assessment report in either PDF or Word format.
@@ -133,7 +145,7 @@ Press `Ctrl + C` in the terminal where `server.py` is running.
 
 ## How to Use
 
-1. Open `http://localhost:3456` in your browser.
+1. Open `https://mdelite-facility-assessment.onrender.com` in your browser (or `http://localhost:3456` if running locally).
 2. Enter a valid 6-digit CCN in the search box at the top of the left panel. The field validates that the input is exactly 6 digits before allowing a fetch.
 3. Click **Fetch**. The preview panel will show a loading skeleton while the data is retrieved.
 4. Once loaded, the right panel populates with the facility hero block, star rating cards, facility detail rows, and the hospitalization metrics table and chart.
@@ -265,8 +277,6 @@ CMS Certification Numbers for nursing home facilities are always exactly 6 digit
 
 ## Known Limitations
 
-**Local server dependency** — The application requires the Flask server to be running locally. It cannot be deployed to a static hosting provider (such as GitHub Pages or Netlify) without modification. A full deployment requires a hosting environment that supports Python, such as Render or Railway.
-
 **CMS data refresh cadence** — CMS updates its provider datasets on a monthly basis. The data displayed in the application reflects the most recent CMS release and may not reflect changes that occurred within the current month.
 
 **State averages availability** — The averages dataset contains one row per state and one row for the national average. If CMS has not published averages for a given state in the current dataset release, state average fields will display "N/A — not reported".
@@ -316,22 +326,60 @@ Values sourced from CMS dataset processing date: May 2026. Minor variation may o
 
 ## Deployment Notes
 
-The application requires a Python-capable hosting environment due to the Flask proxy server. Static hosting alone is not sufficient.
-
-**Recommended platforms:**
-
-- **Render** (render.com) — Supports Python web services on a free tier. Deploy by connecting a GitHub repository and setting the start command to `python3 server.py`.
-- **Railway** (railway.app) — Similar Python support with minimal configuration. Detects Flask applications automatically from a `requirements.txt` file.
-
-**Requirements file for deployment:**
-
-Create a `requirements.txt` in the project root:
+The application is deployed on **Render** at:
 
 ```
-flask>=2.0.0
+https://mdelite-facility-assessment.onrender.com
 ```
 
-No other Python packages are required. All frontend dependencies are loaded via CDN at runtime.
+Source code is hosted at:
+
+```
+https://github.com/emergingsana123/mdelite-facility-assessment
+```
+
+### How It Is Deployed
+
+The repository includes a `render.yaml` file that defines the service configuration:
+
+```yaml
+services:
+  - type: web
+    name: medelite-facility-assessment
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn server:app
+    plan: free
+```
+
+Render detects this file automatically when the repository is connected. Any push to the `main` branch triggers an automatic redeploy.
+
+### Production Server
+
+In production, the application is served by **Gunicorn** (a production-grade Python WSGI server) rather than Flask's built-in development server. The `requirements.txt` includes both Flask and Gunicorn:
+
+```
+flask>=2.3.0
+gunicorn>=21.2.0
+```
+
+### File Path Handling on Render
+
+The server uses `BASE_DIR = os.path.dirname(os.path.abspath(__file__))` to resolve the absolute path of the directory where `server.py` is located. All static file serving (`index.html`, `template.docx`) uses `send_from_directory(BASE_DIR, ...)` rather than relative paths. This is required because Gunicorn's working directory is not guaranteed to match the location of the source files.
+
+### Free Tier Cold Start
+
+Render's free tier spins down idle instances after a period of inactivity. The first request after an idle period may take 30 to 60 seconds while the instance restarts. Subsequent requests respond immediately. This is expected behavior on the free plan.
+
+### Redeploying
+
+To redeploy, push any commit to the `main` branch:
+
+```bash
+git push origin main
+```
+
+Render will detect the push, rebuild the environment, and restart the service automatically. No manual action in the Render dashboard is required.
 
 ---
 
