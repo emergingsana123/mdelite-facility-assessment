@@ -14,7 +14,7 @@ _ctx = ssl.create_default_context()
 _ctx.check_hostname = False
 _ctx.verify_mode = ssl.CERT_NONE
 
-app = Flask(__name__, static_folder='.', static_url_path='')
+app = Flask(__name__)
 
 CMS = 'https://data.cms.gov/provider-data/api/1/datastore/query'
 
@@ -38,7 +38,12 @@ def cms_avg(state_or_nation):
 
 @app.route('/')
 def index():
-    return send_file('index.html')
+    return send_file(os.path.join(os.path.dirname(__file__), 'index.html'))
+
+@app.route('/template.docx')
+def template():
+    return send_file(os.path.join(os.path.dirname(__file__), 'template.docx'),
+                     mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
 
 @app.route('/api/provider/<ccn>')
 def provider(ccn):
